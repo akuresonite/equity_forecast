@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local environment / IDE
+.env
+.venv/
+venv/
+.idea/
+.vscode/
+
+# Data, venvs, and run artifacts live on the SSD, never inside the code tree.
+# This catch-all keeps any accidental local copies out of git.
+data/
+output/
+artifacts/
+*.parquet
+*.csv
+*.pkl
+*.joblib
+
+# Committed result images live in assets/ (whitelisted below); everything
+# else under output/ stays out of git.
+!assets/
+!assets/**
+
+# Tooling / session noise
+.claude-flow/
+.claude/settings.local.json
+
+# OS noise
+.DS_Store
+Thumbs.db

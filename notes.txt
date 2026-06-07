@@ -1,0 +1,1 @@
+https://www.kaggle.com/datasets/kalyan197/nifty50-stocks1999-2026-daily-ohlcv-and-fundamentals?select=nifty50_summary_statistics.csv
