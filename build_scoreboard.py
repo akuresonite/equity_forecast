@@ -10,6 +10,7 @@ Usage:  ./run.sh build_scoreboard.py
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -152,12 +153,44 @@ def to_html(long: pd.DataFrame) -> str:
     return '\n'.join(parts)
 
 
+SAMPLE = ['RELIANCE.NS', 'TCS.NS', 'HDFCBANK.NS', 'INFY.NS', 'ICICIBANK.NS', 'ITC.NS']
+
+
+def _readme_gallery() -> str:
+    if not ASSET_DIR.exists():
+        return '_no charts yet_'
+    names = [p.stem for p in ASSET_DIR.glob('*.png')]
+    pick = [s for s in SAMPLE if s in names]
+    pick += [n for n in sorted(names) if n not in pick]
+    pick = pick[:6]
+    imgs = '\n'.join(f'<img src="assets/forecasts/{s}.png" width="49%"/>' for s in pick)
+    return imgs + (f'\n\n_Full {len(names)}-stock gallery in `assets/forecasts/` '
+                   f'and `scoreboard.html`._')
+
+
+def _replace_block(txt: str, name: str, content: str) -> str:
+    pat = re.compile(rf'(<!-- {name} -->).*?(<!-- /{name} -->)', re.DOTALL)
+    return pat.sub(lambda m: f'{m.group(1)}\n{content}\n{m.group(2)}', txt)
+
+
+def patch_readme(long: pd.DataFrame) -> None:
+    readme = ROOT / 'README.md'
+    if not readme.exists():
+        return
+    txt = readme.read_text()
+    txt = _replace_block(txt, 'LEADERBOARD', to_md(long))
+    txt = _replace_block(txt, 'FORECAST_GALLERY', _readme_gallery())
+    readme.write_text(txt)
+    print(f'patched {readme} (leaderboard + gallery)')
+
+
 def main():
     long = load_long()
     if long.empty:
         print('no metrics found — run the tiers first'); return
     (ROOT / 'scoreboard.html').write_text(to_html(long))
     (ROOT / '_leaderboard.md').write_text(to_md(long))
+    patch_readme(long)
     print(f'wrote {ROOT / "scoreboard.html"}')
     print(f'wrote {ROOT / "_leaderboard.md"}')
     # console headline

@@ -34,3 +34,6 @@ artifacts/
 # OS noise
 .DS_Store
 Thumbs.db
+
+# generated intermediate (content lives in README)
+_leaderboard.md
