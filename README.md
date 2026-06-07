@@ -246,26 +246,29 @@ out of git); the committed artifacts are the code, `scoreboard.html`, and
 ## Key findings
 
 <!-- FINDINGS -->
-_(Tiers 0 & 2 + live forecast complete; tier 1 classical running — findings will be extended.)_
+_(Tiers 0, 1-`close` & 2 + live forecast complete; tier 1 `log_return` finishing — the leaderboard above auto-updates when it lands.)_
 
-1. **RandomWalkWithDrift is the floor and is essentially unbeaten on price
-   levels.** At h=5 and h=60 it ranks #1; the global LightGBM only edges it at
-   h=20 (MASE 3.393 vs 3.416) and ties it at h=60 (5.58 vs 5.58). The classic
-   result holds: on a near-random-walk price series, *yesterday's price + drift*
-   is extremely hard to beat.
-2. **On returns, "predict the average" wins.** HistoricAverage, WindowAverage(20)
-   and LightGBM cluster at MASE ≈ 0.39–0.41, while Naive/RWD/SeasonalNaive (which
-   chase the *last* return) sit at ≈ 0.58. Daily returns are near-unpredictable at
-   these horizons; the best a model does is recover the drift. All return models
-   beat the in-sample seasonal-naive (MASE < 1).
-3. **Global ML pooling helps marginally, not decisively.** One LightGBM across all
+1. **On price levels the whole field sits within a whisker of RandomWalkWithDrift.**
+   At h=60 the classical state-space models just edge it — AutoCES (MASE **5.521**)
+   and AutoETS (5.552) beat RWD (5.579) — while at h=5 RWD is #1 and at h=20 it
+   ties LightGBM. The spread across the top six models is < 2%. Translation:
+   nothing *meaningfully* beats "yesterday's price + drift" on levels; the
+   classical wins are real but within noise.
+2. **AutoARIMA is the weakest classical model here** (MASE 7.98 at h=60 vs ≈ 5.5
+   for ETS/Theta/CES) — its weekly-seasonal (`m=5`) stepwise search overfits daily
+   prices *and* costs ~20 min/fold. ETS/Theta/CES are both better and far cheaper.
+3. **On returns, "predict the average" wins.** HistoricAverage, WindowAverage(20)
+   and LightGBM cluster at MASE ≈ 0.39–0.41, while models that chase the *last*
+   return (Naive/RWD/SeasonalNaive) sit at ≈ 0.58. Daily returns are
+   near-unpredictable at these horizons; the best a model does is recover the
+   drift. All return models beat the in-sample seasonal-naive (MASE < 1).
+4. **Global ML pooling helps marginally, not decisively.** One LightGBM across all
    49 tickers + sector matches the best baselines but does not clearly beat them —
-   at 49 liquid large-caps with split/dividend-adjusted prices there is little
-   extra point-forecast signal to extract at 1-week to 1-quarter horizons.
-4. **HistoricAverage is a trap on levels** (MASE ≈ 87): the 25-year mean price is
-   meaningless for a trending stock — a good sanity check that the harness works.
-5. **Error grows with horizon** (levels MASE 1.9 → 3.4 → 5.6 for 5 → 20 → 60d), as
-   expected.
+   at 49 liquid large-caps with adjusted prices there is little extra
+   point-forecast signal to extract at 1-week to 1-quarter horizons.
+5. **Sanity checks pass:** HistoricAverage is a trap on levels (MASE ≈ 87 — the
+   25-year mean price is meaningless for a trending stock), and error grows
+   monotonically with horizon (levels MASE 1.9 → 3.4 → 5.6 for 5 → 20 → 60d).
 <!-- /FINDINGS -->
 
 ## Limitations
