@@ -39,7 +39,21 @@ Run `./run.sh eda.py` for the full data-understanding report. Headline EDA
 findings are injected below after each run:
 
 <!-- EDA_FINDINGS -->
-_EDA findings will appear here after the first `eda.py` run._
+- **Shape:** 287,310 rows × 26 columns, **49 tickers** (the dataset ships 49 of
+  the Nifty 50), daily, **1999-01-01 → 2026-01-30**.
+- **History per ticker:** min 2,027 · median 5,858 · max 6,770 rows. All 49 reach
+  ≥ 2026-01-01, so all 49 pass the eligibility filter.
+- **Sectors (13):** Financials 10, IT 6, FMCG 5, Automobile 5, Metals 4, Pharma 4,
+  Infrastructure 3, Cement 3, Energy 3, Consumer Durables 2, Power 2, Telecom 1,
+  Healthcare 1.
+- **Leakage proof ✅:** every one of the 10 fundamentals (`Market_Cap, PE_Ratio,
+  Forward_PE, PEG_Ratio, Price_to_Book, Dividend_Yield, EPS, Beta, 52Week_High,
+  52Week_Low`) is **constant within 49/49 tickers** → confirmed point-in-time
+  snapshots → dropped. (`PEG_Ratio` is 100% null anyway.)
+- `Daily_Return` exactly equals `Close.pct_change()` (mean |diff| = 0.0) — it is
+  just a convenience column; we recompute trailing features inside the models.
+- **Survivorship:** 29/49 tickers list after 2000 (e.g. HDFCLIFE & SBILIFE 2017,
+  LTIM 2016, COALINDIA 2010) — the panel is current constituents only.
 <!-- /EDA_FINDINGS -->
 
 ### ⚠️ Two hazards this project handles explicitly
