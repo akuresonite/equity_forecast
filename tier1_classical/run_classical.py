@@ -20,7 +20,7 @@ import pandas as pd
 import polars as pl
 
 from statsforecast import StatsForecast
-from statsforecast.models import AutoARIMA, AutoETS, AutoTheta, AutoCES
+from statsforecast.models import AutoARIMA, AutoETS, AutoTheta, AutoCES, Naive
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import splits          # noqa: E402
@@ -50,7 +50,9 @@ def _pd(df: pl.DataFrame) -> pd.DataFrame:
 def forecast_eval(train_pl: pl.DataFrame, test_pl: pl.DataFrame) -> pd.DataFrame:
     train = _pd(train_pl)[['unique_id', 'ds', 'y']]
     test  = _pd(test_pl)[['unique_id', 'ds', 'y']]
-    sf = StatsForecast(models=MODELS, freq='B', n_jobs=-1)
+    # fallback_model: if a per-series fit fails (e.g. AutoCES "no model able to
+    # be fitted" on noisy returns), degrade that cell to Naive instead of crashing.
+    sf = StatsForecast(models=MODELS, freq='B', n_jobs=-1, fallback_model=Naive())
     fc = sf.forecast(df=train, h=PREDICT_H)        # one-shot fit+predict
     if 'unique_id' not in fc.columns:
         fc = fc.reset_index()
@@ -85,8 +87,11 @@ def run_target(target: str) -> None:
 
 
 def main() -> None:
-    print(f'[tier1] start cpu={thermal.cpu_c():.1f}°C', flush=True)
-    for t in TARGETS:
+    # Optional CLI target(s) so a single target can be (re)run without redoing the
+    # expensive other one — e.g. `run_classical.py log_return`.
+    targets = [t for t in sys.argv[1:] if t in TARGETS] or TARGETS
+    print(f'[tier1] start cpu={thermal.cpu_c():.1f}°C  targets={targets}', flush=True)
+    for t in targets:
         run_target(t)
     print(f'[tier1] done cpu={thermal.cpu_c():.1f}°C', flush=True)
 
