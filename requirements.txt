@@ -13,6 +13,8 @@ utilsforecast==0.2.16
 statsforecast==2.0.3
 mlforecast==1.0.31
 lightgbm==4.6.0
+xgboost==3.2.0
+catboost==1.2.10
 scikit-learn==1.8.0
 shap==0.51.0
 matplotlib==3.10.9

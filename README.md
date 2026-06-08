@@ -215,26 +215,47 @@ Walk-forward CV, cross-fold + cross-stock means; **lower MASE is better**
 
 ## 🎯 Backtest: forecasts vs. actuals
 
-The leaderboard says *how wrong* each model is; these charts let you **see it** — same style as
-the live charts, but on the **last 60 held-out trading days where the truth is known**. Train
-ends at the dotted line; **black is the realized price**. Mean MAPE over the window:
-**RWD 4.45% · AutoETS 4.59% · LightGBM 4.48%** — all three essentially tie, because all three
-correctly predict a **near-flat path** (the honest forecast for a near-random-walk price). Where
-a forecast looks "off" (e.g. APOLLOHOSP fell ~12% in the window) it's because the stock
-*genuinely moved* that much — a move no model can predict from past prices, which is the whole
-point. Note all three models **use lagged features** (for LightGBM, `lag1` is the #1 SHAP
-feature); the flatness is the correct answer, not a failure to use recent data. Full set in
-`assets/backtest/`; reproduce with `./run.sh backtest_plot.py`.
+There are **two honest ways** to compare forecasts to realized prices on the **last 60 held-out
+trading days** — they answer different questions and look completely different. Showing both is
+the whole point.
 
-<img src="assets/backtest/RELIANCE.NS.png" width="49%"/> <img src="assets/backtest/TCS.NS.png" width="49%"/>
-<img src="assets/backtest/HDFCBANK.NS.png" width="49%"/> <img src="assets/backtest/INFY.NS.png" width="49%"/>
+### A. Multi-step (predict 60 days *blind*)
+
+Train once, forecast the full 60 days with no feedback. Train ends at the dotted line; **black is
+the realized price.** Mean MAPE: **RWD 4.45% · AutoETS 4.59% · LightGBM 4.91%** — all near-flat,
+because that is the honest forecast for a near-random walk. Telling detail: the LightGBM here is
+trained with **early-stopping on a validation set** (the "assess how-far-off during training" step)
+and it stops at **a single tree** — the validation error can't improve beyond the drift, and
+directional accuracy is 50.8%. *The model-assessment metric itself reports that there is no learnable
+signal in past prices.* Where a forecast looks "off" (e.g. APOLLOHOSP fell ~12%) the *stock* moved —
+unpredictable from price history. All three **use lagged features** (LightGBM's `lag1` is the #1 SHAP
+feature); flatness is the correct answer, not a failure to use recent data. Reproduce:
+`./run.sh backtest_plot.py`.
+
+<img src="assets/backtest/RELIANCE.NS.png" width="49%"/> <img src="assets/backtest/APOLLOHOSP.NS.png" width="49%"/>
+
+### B. One-step-ahead (rolling, re-anchored daily) — the forecast that *tracks*
+
+At each day, predict *tomorrow* from the real data up to *today*, then re-anchor on the actual and
+step forward. Now the forecasts **hug the actual** — mean 1-step MAPE **Naive 0.91% · AutoETS 0.94%
+· LightGBM 0.91%** (vs ~4.5% multi-step). This looks like the forecast people expect — but it is
+**not skill**:
+
+- **Directional accuracy ≈ 50%** (LightGBM 50.2%, AutoETS 50.9%) — a coin flip on the *direction* of the next move.
+- **LightGBM exactly ties Naive (0.91%)** — the tuned tree adds nothing over "predict yesterday."
+
+The lines track only because they predict ≈ *yesterday's price* (they're one day behind). That is
+the efficient-market result made visual: you can be ~99% accurate on the *level* and still have
+zero ability to call the *move*. Reproduce: `./run.sh backtest_onestep.py`.
+
+<img src="assets/backtest_1step/APOLLOHOSP.NS.png" width="49%"/> <img src="assets/backtest_1step/RELIANCE.NS.png" width="49%"/>
 
 ---
 
 ## 📈 Live forward forecasts
 
 Next ~60 business days per stock — black = history, dashed blue = RandomWalkWithDrift,
-red = AutoETS (with 80% band), green = LightGBM (returns → price). Full gallery in
+red = AutoETS (with 80% band), green = LightGBM (levels, differenced). Full gallery in
 `assets/forecasts/`.
 
 <!-- FORECAST_GALLERY -->

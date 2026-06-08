@@ -27,14 +27,12 @@ import polars as pl
 
 from statsforecast import StatsForecast
 from statsforecast.models import Naive, RandomWalkWithDrift, AutoETS
-from mlforecast import MLForecast
-from mlforecast.lag_transforms import RollingMean, RollingStd
-from mlforecast.target_transforms import Differences
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 import data       # noqa: E402
 import splits     # noqa: E402
+import mlfit      # noqa: E402
 
 H = splits.TEST_DAYS          # 60-day held-out window
 PREDICT_H = H + 15
@@ -92,24 +90,18 @@ def main():
     if 'unique_id' not in lvl.columns:
         lvl = lvl.reset_index()
 
-    # tier2 price model: LightGBM on the price LEVEL with first-differencing — the
-    # exact setup tier2 scores for `close`. It predicts increments (not integrated
-    # returns), so it cannot compound a bias into a runaway path.
-    print('[backtest] fitting LightGBM price model (levels, differenced)…', flush=True)
-    import lightgbm as lgb
+    # tier2 price model via mlfit: LightGBM on the price LEVEL (first-differenced) with
+    # time-ordered validation + early stopping. Predicts increments (not integrated
+    # returns) so it cannot compound a bias into a runaway path.
+    print('[backtest] fitting LightGBM (levels) with early stopping…', flush=True)
     trp = (_expand_business_days(_pd(tr_close))
            .merge(static_df[['unique_id'] + STATIC], on='unique_id', how='left')
            .dropna(subset=['y']))
-    trp['sector'] = trp['sector'].astype('category')
-    mlf = MLForecast(
-        models={'lgb': lgb.LGBMRegressor(n_estimators=1500, learning_rate=0.05, max_depth=8,
-                num_leaves=63, min_data_in_leaf=200, feature_fraction=0.9, bagging_fraction=0.9,
-                bagging_freq=5, objective='regression', verbosity=-1, n_jobs=-1, random_state=42)},
-        freq='B', lags=LAGS,
-        lag_transforms={1: [RollingMean(w) for w in ROLL] + [RollingStd(w) for w in ROLL]},
-        target_transforms=[Differences([1])], num_threads=4)
-    mlf.fit(trp, static_features=STATIC, keep_last_n=max(LAGS) + 60)
-    rp = mlf.predict(h=PREDICT_H).rename(columns={'lgb': 'lgb_price'})
+    fcst, info = mlfit.fit_lgb_es(trp, target='close')
+    print(f"[backtest]   train-validation assessment: MAE={info['val_mae']:.2f} price-units · "
+          f"directional acc={info['dir_acc'] * 100:.1f}% (~50% = no timing skill) · "
+          f"trees={info['best_iter']} (early-stopped from 3000)", flush=True)
+    rp = fcst.predict(h=PREDICT_H).rename(columns={'lgb': 'lgb_price'})
 
     rows = []
     hist_all = _pd(tr_close)

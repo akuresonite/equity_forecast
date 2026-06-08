@@ -469,6 +469,20 @@ point. NB: the LightGBM here predicts the price level via first-differencing; an
 variant compounded a small per-step bias into a misleading runaway path and was replaced. (Full set
 in `assets/backtest/`.)*
 
+**One-step-ahead — the forecast that "tracks".** Figure 6 is a 60-day *blind* forecast. If instead
+we re-anchor daily (predict tomorrow from data up to today, roll forward), the forecasts **hug** the
+actual: mean 1-step MAPE is **Naive 0.91%, AutoETS 0.94%, LightGBM 0.91%** (vs ~4.5% multi-step). But
+this is *not* predictive skill — **directional accuracy is ≈50%** (LightGBM 50.2%, AutoETS 50.9%, a
+coin flip) and LightGBM exactly ties Naive. The curves track only because they predict ≈ the last
+price, one day behind. You can be ~99% accurate on the *level* and have **zero** ability to call the
+*direction* — the efficient-market result, made visual.
+
+![1-step backtest](assets/backtest_1step/APOLLOHOSP.NS.png)
+
+*Figure 6b. APOLLOHOSP, 1-step-ahead rolling backtest. Every model hugs the realized price (~0.8% MAPE)
+— even through the ~12% decline that the blind multi-step forecast (Figure 6) entirely missed — yet
+directional accuracy is ≈50%. Tracking ≠ skill. (`assets/backtest_1step/`, via `backtest_onestep.py`.)*
+
 ### 7.6 Live forward forecast
 
 After backtesting, models are refit on all history and projected ~60 business days forward:

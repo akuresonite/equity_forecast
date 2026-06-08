@@ -31,6 +31,7 @@ from statsforecast import StatsForecast
 from statsforecast.models import RandomWalkWithDrift, AutoETS
 from mlforecast import MLForecast
 from mlforecast.lag_transforms import RollingMean, RollingStd
+from mlforecast.target_transforms import Differences
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
@@ -73,26 +74,24 @@ def level_forecasts(close_pl: pl.DataFrame) -> pd.DataFrame:
     return fc.reset_index() if 'unique_id' not in fc.columns else fc
 
 
-def return_price_path(ret_pl: pl.DataFrame, last_close: pd.Series, static_df: pd.DataFrame) -> pd.DataFrame:
-    train = _expand_business_days(_pd(ret_pl)).merge(static_df, on='unique_id', how='left')
+def price_path_levels(close_pl: pl.DataFrame, static_df: pd.DataFrame) -> pd.DataFrame:
+    """LightGBM on the price LEVEL with first-differencing (the tier2 `close` setup).
+    Predicts increments, so it stays near-flat instead of compounding into a runaway
+    path the way an integrated point-returns forecast does."""
+    train = _expand_business_days(_pd(close_pl)).merge(static_df, on='unique_id', how='left')
     train = train.dropna(subset=['y'])
     train['sector'] = train['sector'].astype('category')
     fcst = MLForecast(
-        models={'lgb_ret': __import__('lightgbm').LGBMRegressor(
+        models={'lgb': __import__('lightgbm').LGBMRegressor(
             n_estimators=1500, learning_rate=0.05, max_depth=8, num_leaves=63,
             min_data_in_leaf=200, feature_fraction=0.9, bagging_fraction=0.9,
             bagging_freq=5, objective='regression', verbosity=-1, n_jobs=-1, random_state=42)},
         freq='B', lags=LAGS,
         lag_transforms={1: [RollingMean(w) for w in ROLL] + [RollingStd(w) for w in ROLL]},
-        num_threads=4,
+        target_transforms=[Differences([1])], num_threads=4,
     )
     fcst.fit(train, static_features=STATIC, keep_last_n=max(LAGS) + 60)
-    fc = fcst.predict(h=H)
-    fc = fc.sort_values(['unique_id', 'ds'])
-    fc['cum'] = fc.groupby('unique_id')['lgb_ret'].cumsum()
-    fc = fc.merge(last_close.rename('last_close'), left_on='unique_id', right_index=True, how='left')
-    fc['lgb_price'] = fc['last_close'] * np.exp(fc['cum'])
-    return fc[['unique_id', 'ds', 'lgb_ret', 'lgb_price']]
+    return fcst.predict(h=H).rename(columns={'lgb': 'lgb_price'})[['unique_id', 'ds', 'lgb_price']]
 
 
 def chart(uid, hist, lvl, ret, meta):
@@ -107,7 +106,7 @@ def chart(uid, hist, lvl, ret, meta):
                             color='#d62728', alpha=0.15, label='AutoETS 80%')
     r = ret[ret['unique_id'] == uid].sort_values('ds')
     if not r.empty:
-        ax.plot(r['ds'], r['lgb_price'], color='#2ca02c', lw=1.6, label='LightGBM (returns→price)')
+        ax.plot(r['ds'], r['lgb_price'], color='#2ca02c', lw=1.6, label='LightGBM (levels)')
     ttl = f"{uid}"
     if meta is not None:
         ttl += f"  ·  {meta.get('company_name','')}  ·  {meta.get('sector','')}"
@@ -124,7 +123,6 @@ def main():
     panel = data.load_panel()
     ids = splits._eligible_ids(panel)
     close_pl = splits._slice(panel, ids, 'close')
-    ret_pl = splits._slice(panel, ids, 'log_return')
     static_df = data.load_static().to_pandas()
     static_df['sector'] = static_df['sector'].fillna('unknown').astype(str)
     static_df['listing_age_years'] = static_df['listing_age_years'].fillna(0.0).astype(float)
@@ -132,11 +130,11 @@ def main():
 
     print(f'[live] {len(ids)} tickers — fitting level models…', flush=True)
     lvl = level_forecasts(close_pl)
-    thermal.cool_if_hot(tag='live-ret')
-    print('[live] fitting LightGBM returns model…', flush=True)
+    thermal.cool_if_hot(tag='live-lgb')
+    print('[live] fitting LightGBM price model (levels)…', flush=True)
     close_hist = _pd(close_pl)
     last_close = close_hist.sort_values('ds').groupby('unique_id')['y'].last()
-    ret = return_price_path(ret_pl, last_close, static_df[['unique_id'] + STATIC])
+    ret = price_path_levels(close_pl, static_df[['unique_id'] + STATIC])
 
     # persist combined long-format forecasts
     out_long = lvl.merge(ret, on=['unique_id', 'ds'], how='outer').sort_values(['unique_id', 'ds'])
