@@ -226,6 +226,21 @@ help** — Optuna's "best" config pushed `min_data_in_leaf` to ~500 (near-maxima
 the search itself concluded *"fit almost nothing."* There is no XGBoost/CatBoost setting and no
 hyperparameter that extracts signal which isn't in the data. Reproduce: `./run.sh bakeoff.py`.
 
+## 🌊 Tier 3 — volatility: where a model *finally* beats naive
+
+Returns are unpredictable in *direction* (≈50%), but their **variance clusters** — big moves follow
+big moves. So unlike price, **volatility is forecastable.** A GARCH(1,1) 1-step-ahead
+conditional-variance forecast beats a constant-volatility assumption on **98% of stocks** (mean
+QLIKE −7.31 vs −6.84; lower is better). A simple trailing-20-day vol is about tied with GARCH
+(−7.46) — both capture the clustering; the point is that **both crush "assume constant vol,"**
+whereas for returns *nothing* beats naive. This is the honest answer to "give me a model that isn't
+way off": **forecast risk, not price.**
+
+<img src="assets/volatility/RELIANCE.NS.png" width="75%"/>
+
+GARCH (green) rises and falls with realized volatility (black) through every regime, while the
+constant baseline (red) is flat and blind. Reproduce: `./run.sh tier3_volatility.py`.
+
 ---
 
 ## 🎯 Backtest: forecasts vs. actuals

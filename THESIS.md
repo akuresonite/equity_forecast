@@ -496,6 +496,21 @@ AutoETS interval cone (uncertainty $\propto \sqrt{h}$ for a random walk), and a 
 LightGBM path. The forecasts being nearly flat is **not a bug** — it is the correct behaviour
 when the best estimate of tomorrow is today plus a tiny drift.*
 
+### 7.7 Volatility — the forecastable target (tier 3)
+
+The one place a model genuinely beats naive. Returns are directionally unpredictable, but their
+*variance clusters*, so volatility **is** forecastable. A GARCH(1,1) 1-step-ahead conditional-variance
+forecast beats a constant-volatility assumption on **98% of the 49 stocks** (mean QLIKE −7.31 vs
+−6.84; lower is better, QLIKE = mean(log σ̂² + r²/σ̂²)). A trailing-20-day estimate is about tied with
+GARCH (−7.46) — both capture the clustering; the lesson is that **both crush constant-vol**, whereas
+for returns nothing beats naive.
+
+![GARCH volatility](assets/volatility/RELIANCE.NS.png)
+
+*Figure 8. GARCH(1,1) 1-step volatility (green) tracks realized volatility (black) through every
+regime; the constant-vol baseline (red) is flat and blind. Volatility is where a model earns its keep
+— risk, not price.*
+
 ---
 
 ## 8. Discussion
