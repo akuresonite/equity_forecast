@@ -22,6 +22,17 @@ plus a **live forward forecast** of the next ~3 months per stock.
 - **Metrics:** MAE, RMSE, sMAPE, **MASE** (scale-free; mean **and** median reported).
 - **Hardware:** runs end-to-end on a Raspberry Pi 5 (4 cores, 8 GB) with thermal throttling.
 
+## 🏁 Results at a glance
+
+Mean **MASE** across 49 stocks × 6 walk-forward folds — *lower is better; MASE < 1 beats the in-sample seasonal-naive.* The **winning model** is shown per cell:
+
+| Target | h = 5 d | h = 20 d | h = 60 d |
+|---|:--:|:--:|:--:|
+| **`close`** — price level | RWD `1.92` | LightGBM `3.39` | AutoCES `5.52` |
+| **`log_return`** — stationary | HistoricAvg `0.40` | AutoETS `0.39` | AutoETS `0.39` |
+
+> **Takeaway:** at every horizon the best model only **ties** the trivial floor — RandomWalkWithDrift on levels, "predict-the-average-return" on returns — to within ~1–2%. **Model complexity did not win.** The full 10-model × 3-horizon tables for both targets are in the [🏆 Leaderboard](#-leaderboard) section below.
+
 ---
 
 ## The dataset
