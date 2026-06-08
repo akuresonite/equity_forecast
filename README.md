@@ -1,5 +1,7 @@
 # Nifty50 Equity Forecasting Benchmark
 
+📄 **[Read the full thesis → `THESIS.md`](THESIS.md)** — complete methodology, mathematics, worked examples, plots, results, and references, written for a machine-learning audience.
+
 A disciplined, **tier-based time-series forecasting benchmark** over 25+ years of
 daily data for the 50 constituents of India's NSE Nifty 50 index — from trivial
 baselines to per-series classical models to a global gradient-boosted model —
@@ -10,9 +12,6 @@ plus a **live forward forecast** of the next ~3 months per stock.
 > floor.* The recurring lesson in finance is that **RandomWalkWithDrift on price
 > levels is brutally hard to beat**, and that **forecasting returns** (stationary)
 > is the honest framing.
-
-📄 **Full write-up → [`THESIS.md`](THESIS.md)** — complete methodology, mathematics,
-worked examples, plots, results, and references, written for a machine-learning audience.
 
 - **Data:** Kaggle [`kalyan197/nifty50-stocks1999-2026-daily-ohlcv-and-fundamentals`](https://www.kaggle.com/datasets/kalyan197/nifty50-stocks1999-2026-daily-ohlcv-and-fundamentals) — ~88 MB, ~287K daily rows, **49 stocks** (of the Nifty 50), Jan 1999 → Jan 2026, sourced from Yahoo Finance, CC0.
 - **Targets:** `close` (price level) **and** `log_return` (stationary).
