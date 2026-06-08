@@ -1,5 +1,7 @@
 # Nifty50 Equity Forecasting Benchmark
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 📄 **[Read the full thesis → `THESIS.md`](THESIS.md)** — complete methodology, mathematics, worked examples, plots, results, and references, written for a machine-learning audience.
 
 A disciplined, **tier-based time-series forecasting benchmark** over 25+ years of
