@@ -11,7 +11,7 @@ plus a **live forward forecast** of the next ~3 months per stock.
 > levels is brutally hard to beat**, and that **forecasting returns** (stationary)
 > is the honest framing.
 
-- **Data:** Kaggle [`kalyan197/nifty50-stocks1999-2026-daily-ohlcv-and-fundamentals`](https://www.kaggle.com/datasets/kalyan197/nifty50-stocks1999-2026-daily-ohlcv-and-fundamentals) — ~88 MB, ~300K daily rows, 50 stocks, Jan 1999 → Jan 2026, sourced from Yahoo Finance, CC0.
+- **Data:** Kaggle [`kalyan197/nifty50-stocks1999-2026-daily-ohlcv-and-fundamentals`](https://www.kaggle.com/datasets/kalyan197/nifty50-stocks1999-2026-daily-ohlcv-and-fundamentals) — ~88 MB, ~287K daily rows, **49 stocks** (of the Nifty 50), Jan 1999 → Jan 2026, sourced from Yahoo Finance, CC0.
 - **Targets:** `close` (price level) **and** `log_return` (stationary).
 - **Horizons:** 5 / 20 / 60 trading days (≈ 1 week / 1 month / 1 quarter).
 - **Validation:** walk-forward CV, 6 folds, 60-day test windows, expanding train.
@@ -26,7 +26,7 @@ One combined **long-format** file plus a summary and metadata:
 
 | File | What it is |
 |---|---|
-| `nifty50_historical_data.csv` | Main panel — daily OHLCV + derived + fundamentals for all 50 tickers |
+| `nifty50_historical_data.csv` | Main panel — daily OHLCV + derived + fundamentals for all 49 tickers |
 | `nifty50_summary_statistics.csv` | One-row-per-stock summary over the full period |
 | `metadata.json` | Collection metadata |
 
