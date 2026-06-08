@@ -459,12 +459,15 @@ up to the last 60 trading days, forecast that window, and overlay the **realized
 
 ![Backtest overlay](assets/backtest/RELIANCE.NS.png)
 
-*Figure 6. RELIANCE, held-out 60 days (train ends at the dotted line; black = actual). The flat
-RandomWalkWithDrift and AutoETS forecasts (≈4% MAPE) track the realized sideways-then-down path
-closely and the actual stays inside AutoETS's 80% band, while the LightGBM returns→price path
-drifts upward and misses (≈7%). Mean MAPE across all 49 stocks over this window: RWD 4.45%,
-AutoETS 4.59%, LightGBM 6.07% — the same ordering as the MASE leaderboard, now visible. (Full
-set in `assets/backtest/`.)*
+*Figure 6. RELIANCE, held-out 60 days (train ends at the dotted line; black = actual). All three
+models — RandomWalkWithDrift, AutoETS, and the differenced-levels LightGBM — predict a near-flat
+path and cluster at ≈4% MAPE, with the actual inside AutoETS's 80% band. Mean MAPE across all 49
+stocks: RWD 4.45%, AutoETS 4.59%, LightGBM 4.48% — they tie, because for a near-random-walk price
+the best forecast given any feature set is ≈ the last price. Larger errors (e.g. APOLLOHOSP, which
+fell ~12% in the window) are real moves no price-history model can predict — the project's central
+point. NB: the LightGBM here predicts the price level via first-differencing; an earlier returns→price
+variant compounded a small per-step bias into a misleading runaway path and was replaced. (Full set
+in `assets/backtest/`.)*
 
 ### 7.6 Live forward forecast
 

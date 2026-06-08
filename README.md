@@ -215,12 +215,15 @@ Walk-forward CV, cross-fold + cross-stock means; **lower MASE is better**
 
 ## 🎯 Backtest: forecasts vs. actuals
 
-The leaderboard says *how wrong* each model is; these charts let you **see it**. Same style
-as the live charts, but on the **last 60 held-out trading days where the truth is known** —
-the visual counterpart of the MASE numbers. Train ends at the dotted line; **black is the
-realized price**. Mean MAPE over the window: **RWD 4.45% · AutoETS 4.59% · LightGBM 6.07%** —
-the flat drift baselines hug the actual path more closely than the "smarter" tree, exactly as
-the leaderboard implies (and the realized path stays inside AutoETS's 80% band). Full set in
+The leaderboard says *how wrong* each model is; these charts let you **see it** — same style as
+the live charts, but on the **last 60 held-out trading days where the truth is known**. Train
+ends at the dotted line; **black is the realized price**. Mean MAPE over the window:
+**RWD 4.45% · AutoETS 4.59% · LightGBM 4.48%** — all three essentially tie, because all three
+correctly predict a **near-flat path** (the honest forecast for a near-random-walk price). Where
+a forecast looks "off" (e.g. APOLLOHOSP fell ~12% in the window) it's because the stock
+*genuinely moved* that much — a move no model can predict from past prices, which is the whole
+point. Note all three models **use lagged features** (for LightGBM, `lag1` is the #1 SHAP
+feature); the flatness is the correct answer, not a failure to use recent data. Full set in
 `assets/backtest/`; reproduce with `./run.sh backtest_plot.py`.
 
 <img src="assets/backtest/RELIANCE.NS.png" width="49%"/> <img src="assets/backtest/TCS.NS.png" width="49%"/>

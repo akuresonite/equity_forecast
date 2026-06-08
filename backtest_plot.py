@@ -29,6 +29,7 @@ from statsforecast import StatsForecast
 from statsforecast.models import Naive, RandomWalkWithDrift, AutoETS
 from mlforecast import MLForecast
 from mlforecast.lag_transforms import RollingMean, RollingStd
+from mlforecast.target_transforms import Differences
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
@@ -71,14 +72,12 @@ def main():
     panel = data.load_panel()
     ids = splits._eligible_ids(panel)
     close = splits._slice(panel, ids, 'close')           # unique_id, ds, y(=close)
-    ret = splits._slice(panel, ids, 'log_return')
     days = close.select(pl.col('ds').unique().sort()).to_series().to_list()
     test_start, test_end = days[-H], days[-1]
     print(f'[backtest] held-out window: {test_start} … {test_end} ({H} trading days)', flush=True)
 
     tr_close = close.filter(pl.col('ds') < test_start)
     te_close = _pd(close.filter((pl.col('ds') >= test_start) & (pl.col('ds') <= test_end)))
-    tr_ret = ret.filter(pl.col('ds') < test_start)
 
     static_df = data.load_static().to_pandas()
     static_df['sector'] = static_df['sector'].fillna('unknown').astype(str)
@@ -93,25 +92,24 @@ def main():
     if 'unique_id' not in lvl.columns:
         lvl = lvl.reset_index()
 
-    # tier2 returns model → integrate to price path off the last training close
-    print('[backtest] fitting LightGBM returns model…', flush=True)
-    last_close = _pd(tr_close).sort_values('ds').groupby('unique_id')['y'].last()
-    trp = _expand_business_days(_pd(tr_ret)).merge(static_df[['unique_id'] + STATIC],
-                                                   on='unique_id', how='left').dropna(subset=['y'])
-    trp['sector'] = trp['sector'].astype('category')
+    # tier2 price model: LightGBM on the price LEVEL with first-differencing — the
+    # exact setup tier2 scores for `close`. It predicts increments (not integrated
+    # returns), so it cannot compound a bias into a runaway path.
+    print('[backtest] fitting LightGBM price model (levels, differenced)…', flush=True)
     import lightgbm as lgb
+    trp = (_expand_business_days(_pd(tr_close))
+           .merge(static_df[['unique_id'] + STATIC], on='unique_id', how='left')
+           .dropna(subset=['y']))
+    trp['sector'] = trp['sector'].astype('category')
     mlf = MLForecast(
         models={'lgb': lgb.LGBMRegressor(n_estimators=1500, learning_rate=0.05, max_depth=8,
                 num_leaves=63, min_data_in_leaf=200, feature_fraction=0.9, bagging_fraction=0.9,
                 bagging_freq=5, objective='regression', verbosity=-1, n_jobs=-1, random_state=42)},
         freq='B', lags=LAGS,
         lag_transforms={1: [RollingMean(w) for w in ROLL] + [RollingStd(w) for w in ROLL]},
-        num_threads=4)
+        target_transforms=[Differences([1])], num_threads=4)
     mlf.fit(trp, static_features=STATIC, keep_last_n=max(LAGS) + 60)
-    rp = mlf.predict(h=PREDICT_H).sort_values(['unique_id', 'ds'])
-    rp['cum'] = rp.groupby('unique_id')['lgb'].cumsum()
-    rp = rp.merge(last_close.rename('lc'), left_on='unique_id', right_index=True, how='left')
-    rp['lgb_price'] = rp['lc'] * np.exp(rp['cum'])
+    rp = mlf.predict(h=PREDICT_H).rename(columns={'lgb': 'lgb_price'})
 
     rows = []
     hist_all = _pd(tr_close)
@@ -141,7 +139,7 @@ def main():
                             color='#d62728', alpha=0.12, label='AutoETS 80%')
         if not r.empty:
             ax.plot(r['ds'], r['lgb_price'], color='#2ca02c', lw=1.5,
-                    label=f"LightGBM returns→price ({e['lgb']:.1f}%)")
+                    label=f"LightGBM levels ({e['lgb']:.1f}%)")
         ax.axvline(act['ds'].iloc[0], color='k', lw=0.8, ls=':', alpha=0.6)
         m = meta.get(uid, {})
         ax.set_title(f"{uid} · {m.get('company_name','')} · {m.get('sector','')}  — "
