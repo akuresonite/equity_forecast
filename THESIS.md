@@ -524,6 +524,18 @@ in **cross-sectional ranking** rather than absolute prediction, and in genuinely
 **point-in-time fundamental** data (which this dataset does not provide). The benchmark's job
 was to establish the floor honestly; it does, and the floor is high.
 
+**Bake-off and tuning confirm it.** Running XGBoost and CatBoost head-to-head with LightGBM, plus a
+25-trial Optuna hyperparameter search, leaves all four within ~2% MASE of each other and of the
+random walk (`bakeoff.py`); the tuned model is marginally *worse*, and Optuna's "best" config drives
+`min_data_in_leaf`≈500 — maximal regularisation, i.e. the search concludes *there is nothing to fit*.
+A different tree library and different hyperparameters change nothing, because the limit is the data,
+not the model. And the broader literature agrees the *kind* of model is not the lever either: a
+one-layer linear net beats heavyweight Transformers on standard TSF benchmarks (Zeng et al. 2022),
+and off-the-shelf time-series foundation models (Chronos, TimesFM) transfer poorly to daily returns.
+Where models *do* earn their keep is a different target — **volatility** (GARCH; returns are
+uncorrelated but their squares are not), **calibrated intervals** (conformal), and **cross-sectional
+ranking** (Gu–Kelly–Xiu: ~0.4% monthly R² but Sharpe >1 from ranking), not point prediction of price.
+
 **The real contribution.** The three decisions that determined success here were *not* model
 choices: (1) detecting and dropping the snapshot fundamentals, (2) framing returns alongside
 levels, and (3) validating walk-forward. Get those wrong and you can "beat the market" on

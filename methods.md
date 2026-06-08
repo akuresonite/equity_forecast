@@ -49,9 +49,34 @@ Per-ticker charts land in `assets/forecasts/`.
 - The panel holds only the **current** Nifty50 constituents → **survivorship
   bias** (winners over-represented). Not fixable from this data; documented.
 
-## Deferred (future tiers)
+## Tier 3+ roadmap (researched) — and an honest ceiling
 
-Tier 3 neural (NHITS/TFT/PatchTST), tier 4 hierarchical reconciliation
-(sector → stock), tier 5 probabilistic/conformal, tier 6 foundation models
-(Chronos/TimeGPT), tier 7 financial-ML discipline (purged CV + embargo, regime
-features). The walk-forward CV here has no embargo/purging yet.
+A literature + library survey of TSF methods *designed for* time series, beyond trees:
+
+- **Deep learning** — NHITS, N-BEATS, and the "simple-beats-complex" DLinear/NLinear,
+  plus PatchTST/TFT, via `neuralforecast` (Nixtla — same API family as our statsforecast)
+  or `darts`. Pi-CPU-feasible: NHITS and (N/D)Linear yes; heavy Transformers
+  (Informer/Autoformer/FEDformer/TimesNet) no. The **DLinear paper (Zeng et al. 2022)**
+  shows a *one-layer linear net beats those Transformers*, so don't expect them to add
+  point-forecast value.
+- **Foundation / zero-shot** — **Chronos-Bolt** (Amazon, Apache-2.0, `chronos-forecasting`,
+  ~1 s/series on CPU) is the only one genuinely Pi-comfortable; TimesFM / Moirai heavier;
+  **TimeGPT is cloud-only/closed** (skip for an offline benchmark). 2025 studies find
+  off-the-shelf TSFMs transfer *poorly* to daily returns.
+- **Volatility — the real win** — GARCH/EGARCH/GJR via **`arch`**. Daily returns are
+  ~uncorrelated but their *squares* are strongly autocorrelated (volatility clustering),
+  so variance *is* forecastable (ms/series on CPU). **This is where a model genuinely
+  beats naive** — a different target than price.
+- **Probabilistic** — conformal prediction (`mapie` / Nixtla built-in) wraps any point
+  model into calibrated intervals at ~zero cost; quantile / DeepAR for densities.
+- **Cross-sectional** — Gu, Kelly & Xiu (2020): monthly stock-level OOS R² is only ~0.4%,
+  yet *ranking* thousands of stocks into long-short deciles earns Sharpe ~1.3+. The payoff
+  is relative ranking, not single-ticker point accuracy.
+
+**Honest ceiling.** On daily equity price/return *point* error the random walk is the
+benchmark and is essentially unbeaten (Welch & Goyal 2008/2022; here the 1-step backtest
+shows LightGBM ties Naive with ≈50% directional accuracy). The productive next tiers are
+therefore **volatility (GARCH)**, **probabilistic/conformal intervals**, and
+**cross-sectional ranking** — not a better point predictor of price. Also pending: tier-4
+hierarchical reconciliation (sector → stock) and tier-7 discipline (purged CV + embargo,
+which the current walk-forward lacks).

@@ -211,6 +211,21 @@ Walk-forward CV, cross-fold + cross-stock means; **lower MASE is better**
 
 <!-- /LEADERBOARD -->
 
+### ⚙️ Does XGBoost / CatBoost / tuning help? (bake-off)
+
+Short answer: **no.** Running every gradient-boosted tree head-to-head (3-fold walk-forward) plus
+an **Optuna-tuned** LightGBM (25 trials) — they **cluster within ~2%** and tie the random walk:
+
+| Target | h | LightGBM | XGBoost | CatBoost | LightGBM (tuned) | RWD floor |
+|---|--:|--:|--:|--:|--:|--:|
+| `close` | 60d | 5.63 | 5.65 | **5.58** | 5.70 | 5.58 |
+| `log_return` | 60d | 0.391 | 0.395 | **0.385** | 0.390 | — |
+
+(MASE; full table in `assets/bakeoff.csv`.) The gaps are noise, and **hyperparameter tuning did not
+help** — Optuna's "best" config pushed `min_data_in_leaf` to ~500 (near-maximal regularisation), i.e.
+the search itself concluded *"fit almost nothing."* There is no XGBoost/CatBoost setting and no
+hyperparameter that extracts signal which isn't in the data. Reproduce: `./run.sh bakeoff.py`.
+
 ---
 
 ## 🎯 Backtest: forecasts vs. actuals
