@@ -154,33 +154,45 @@ Walk-forward CV, cross-fold + cross-stock means; **lower MASE is better**
 | Rank | Model | MASE | MASE (median) | MAE | RMSE | sMAPE |
 |---:|:--|--:|--:|--:|--:|--:|
 | 1 | `tier0:HistoricAverage` | 0.396 | 0.342 | 0.008958 | 0.01095 | 0.8582 |
-| 2 | `tier2:lgb` | 0.397 | 0.347 | 0.008996 | 0.01102 | 0.8355 |
-| 3 | `tier0:WindowAverage` | 0.408 | 0.350 | 0.009229 | 0.01129 | 0.797 |
-| 4 | `tier0:SeasonalNaive` | 0.577 | 0.528 | 0.01306 | 0.01605 | 0.7328 |
-| 5 | `tier0:Naive` | 0.580 | 0.486 | 0.01323 | 0.0153 | 0.7322 |
-| 6 | `tier0:RWD` | 0.581 | 0.486 | 0.01323 | 0.0153 | 0.7323 |
+| 2 | `tier1:AutoETS` | 0.396 | 0.346 | 0.008962 | 0.01096 | 0.86 |
+| 3 | `tier2:lgb` | 0.397 | 0.347 | 0.008996 | 0.01102 | 0.8355 |
+| 4 | `tier1:AutoARIMA` | 0.400 | 0.345 | 0.009061 | 0.01105 | 0.8591 |
+| 5 | `tier0:WindowAverage` | 0.408 | 0.350 | 0.009229 | 0.01129 | 0.797 |
+| 6 | `tier1:AutoTheta` | 0.414 | 0.371 | 0.009386 | 0.01146 | 0.8048 |
+| 7 | `tier1:CES` | 0.562 | 0.470 | 0.01282 | 0.01489 | 0.7405 |
+| 8 | `tier0:SeasonalNaive` | 0.577 | 0.528 | 0.01306 | 0.01605 | 0.7328 |
+| 9 | `tier0:Naive` | 0.580 | 0.486 | 0.01323 | 0.0153 | 0.7322 |
+| 10 | `tier0:RWD` | 0.581 | 0.486 | 0.01323 | 0.0153 | 0.7323 |
 
 **Horizon 20 trading days** — ranked by MASE (lower is better)
 
 | Rank | Model | MASE | MASE (median) | MAE | RMSE | sMAPE |
 |---:|:--|--:|--:|--:|--:|--:|
-| 1 | `tier0:HistoricAverage` | 0.388 | 0.374 | 0.008725 | 0.01142 | 0.8634 |
-| 2 | `tier2:lgb` | 0.392 | 0.381 | 0.008808 | 0.01152 | 0.8328 |
-| 3 | `tier0:WindowAverage` | 0.403 | 0.390 | 0.009066 | 0.01181 | 0.8065 |
-| 4 | `tier0:SeasonalNaive` | 0.569 | 0.530 | 0.01283 | 0.0162 | 0.7324 |
-| 5 | `tier0:Naive` | 0.575 | 0.487 | 0.01309 | 0.01568 | 0.7335 |
-| 6 | `tier0:RWD` | 0.576 | 0.488 | 0.0131 | 0.01569 | 0.7337 |
+| 1 | `tier1:AutoETS` | 0.388 | 0.374 | 0.008723 | 0.01142 | 0.8655 |
+| 2 | `tier0:HistoricAverage` | 0.388 | 0.374 | 0.008725 | 0.01142 | 0.8634 |
+| 3 | `tier1:AutoARIMA` | 0.391 | 0.375 | 0.008794 | 0.0115 | 0.8706 |
+| 4 | `tier2:lgb` | 0.392 | 0.381 | 0.008808 | 0.01152 | 0.8328 |
+| 5 | `tier0:WindowAverage` | 0.403 | 0.390 | 0.009066 | 0.01181 | 0.8065 |
+| 6 | `tier1:AutoTheta` | 0.404 | 0.390 | 0.009086 | 0.01183 | 0.8041 |
+| 7 | `tier1:CES` | 0.560 | 0.478 | 0.01278 | 0.01539 | 0.7429 |
+| 8 | `tier0:SeasonalNaive` | 0.569 | 0.530 | 0.01283 | 0.0162 | 0.7324 |
+| 9 | `tier0:Naive` | 0.575 | 0.487 | 0.01309 | 0.01568 | 0.7335 |
+| 10 | `tier0:RWD` | 0.576 | 0.488 | 0.0131 | 0.01569 | 0.7337 |
 
 **Horizon 60 trading days** — ranked by MASE (lower is better)
 
 | Rank | Model | MASE | MASE (median) | MAE | RMSE | sMAPE |
 |---:|:--|--:|--:|--:|--:|--:|
-| 1 | `tier0:HistoricAverage` | 0.392 | 0.382 | 0.008822 | 0.01191 | 0.8635 |
-| 2 | `tier2:lgb` | 0.398 | 0.390 | 0.008974 | 0.01205 | 0.819 |
-| 3 | `tier0:WindowAverage` | 0.405 | 0.394 | 0.009116 | 0.01223 | 0.801 |
-| 4 | `tier0:SeasonalNaive` | 0.566 | 0.531 | 0.01275 | 0.01632 | 0.7306 |
-| 5 | `tier0:Naive` | 0.581 | 0.483 | 0.01329 | 0.0162 | 0.7382 |
-| 6 | `tier0:RWD` | 0.583 | 0.482 | 0.01332 | 0.01624 | 0.7381 |
+| 1 | `tier1:AutoETS` | 0.391 | 0.380 | 0.008817 | 0.01191 | 0.865 |
+| 2 | `tier0:HistoricAverage` | 0.392 | 0.382 | 0.008822 | 0.01191 | 0.8635 |
+| 3 | `tier1:AutoARIMA` | 0.395 | 0.384 | 0.008888 | 0.01197 | 0.8739 |
+| 4 | `tier2:lgb` | 0.398 | 0.390 | 0.008974 | 0.01205 | 0.819 |
+| 5 | `tier0:WindowAverage` | 0.405 | 0.394 | 0.009116 | 0.01223 | 0.801 |
+| 6 | `tier1:AutoTheta` | 0.405 | 0.392 | 0.00913 | 0.01225 | 0.7985 |
+| 7 | `tier0:SeasonalNaive` | 0.566 | 0.531 | 0.01275 | 0.01632 | 0.7306 |
+| 8 | `tier0:Naive` | 0.581 | 0.483 | 0.01329 | 0.0162 | 0.7382 |
+| 9 | `tier0:RWD` | 0.583 | 0.482 | 0.01332 | 0.01624 | 0.7381 |
+| 10 | `tier1:CES` | 0.689 | 0.472 | 0.01643 | 0.02184 | 0.75 |
 
 <!-- /LEADERBOARD -->
 
@@ -246,7 +258,10 @@ out of git); the committed artifacts are the code, `scoreboard.html`, and
 ## Key findings
 
 <!-- FINDINGS -->
-_(Tiers 0, 1-`close` & 2 + live forecast complete; tier 1 `log_return` finishing — the leaderboard above auto-updates when it lands.)_
+**All tiers complete.** One-line takeaway: on **price levels** nothing meaningfully
+beats RandomWalkWithDrift, and on **returns** the best a model does is recover the
+drift — where tier-1 **AutoETS** and the trivial HistoricAverage baseline tie for
+first. Complexity did not pay off here.
 
 1. **On price levels the whole field sits within a whisker of RandomWalkWithDrift.**
    At h=60 the classical state-space models just edge it — AutoCES (MASE **5.521**)
@@ -254,14 +269,17 @@ _(Tiers 0, 1-`close` & 2 + live forecast complete; tier 1 `log_return` finishing
    ties LightGBM. The spread across the top six models is < 2%. Translation:
    nothing *meaningfully* beats "yesterday's price + drift" on levels; the
    classical wins are real but within noise.
-2. **AutoARIMA is the weakest classical model here** (MASE 7.98 at h=60 vs ≈ 5.5
-   for ETS/Theta/CES) — its weekly-seasonal (`m=5`) stepwise search overfits daily
-   prices *and* costs ~20 min/fold. ETS/Theta/CES are both better and far cheaper.
-3. **On returns, "predict the average" wins.** HistoricAverage, WindowAverage(20)
-   and LightGBM cluster at MASE ≈ 0.39–0.41, while models that chase the *last*
-   return (Naive/RWD/SeasonalNaive) sit at ≈ 0.58. Daily returns are
-   near-unpredictable at these horizons; the best a model does is recover the
-   drift. All return models beat the in-sample seasonal-naive (MASE < 1).
+2. **On levels, AutoARIMA is the weakest classical model** (MASE 7.98 at h=60 vs
+   ≈ 5.5 for ETS/Theta/CES) — its weekly-seasonal (`m=5`) stepwise search overfits
+   daily prices *and* costs ~25 min/fold. ETS/Theta/CES are both better and far
+   cheaper.
+3. **On returns, "predict the drift" wins — and AutoETS does it best.** At h=20/60
+   tier-1 **AutoETS** (MASE 0.388 / 0.391) leads, tying HistoricAverage and just
+   ahead of LightGBM (0.392 / 0.398); all cluster at ≈ 0.39–0.41. Models that chase
+   the *last* return (Naive / RWD / SeasonalNaive) sit at ≈ 0.58. The exception is
+   **AutoCES** (≈ 0.56): it failed to fit some noisy return series and fell back to
+   Naive (handled gracefully via `fallback_model`). Every return model beats the
+   in-sample seasonal-naive (MASE < 1) — daily returns are otherwise near-random.
 4. **Global ML pooling helps marginally, not decisively.** One LightGBM across all
    49 tickers + sector matches the best baselines but does not clearly beat them —
    at 49 liquid large-caps with adjusted prices there is little extra
