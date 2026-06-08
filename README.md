@@ -303,5 +303,10 @@ first. Complexity did not pay off here.
 
 ## License & attribution
 
-Code: MIT. Dataset: CC0 (public domain), via Kaggle / Yahoo Finance. This is a
-research/educational benchmark, **not investment advice**.
+- **Code:** MIT — see [`LICENSE`](LICENSE).
+- **Data:** *"Nifty50 Stocks (1999–2026) Daily OHLCV & Fundamentals"* by Kaggle user
+  **kalyan197**, released **CC0 (public domain)** and sourced from Yahoo Finance —
+  [kaggle.com/datasets/kalyan197/…](https://www.kaggle.com/datasets/kalyan197/nifty50-stocks1999-2026-daily-ohlcv-and-fundamentals).
+  CC0 waives any attribution requirement, but the dataset author is credited here with thanks.
+
+This is a research/educational benchmark, **not investment advice**.

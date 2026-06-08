@@ -566,6 +566,7 @@ artifacts are the code, `scoreboard.html`, and `assets/`.
 11. Bergmeir, C. & Benítez, J.M. (2012). *On the use of cross-validation for time series predictor evaluation.* Information Sciences 191. — **walk-forward CV**.
 12. Makridakis, S., Spiliotis, E. & Assimakopoulos, V. (2020). *The M4 Competition: 100,000 time series and 61 forecasting methods.* IJF 36(1). — simple methods are hard to beat.
 13. Garza, F. et al. *StatsForecast* & *MLForecast* (Nixtla). <https://github.com/Nixtla>.
+14. kalyan197 (2026). *Nifty50 Stocks (1999–2026): Daily OHLCV & Fundamentals* [dataset]. Kaggle, CC0 (public domain), sourced from Yahoo Finance. <https://www.kaggle.com/datasets/kalyan197/nifty50-stocks1999-2026-daily-ohlcv-and-fundamentals> — **the data this benchmark is built on.**
 
 ---
 
