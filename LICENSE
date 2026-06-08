@@ -19,10 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-Note on the dataset: the Nifty 50 OHLCV data used by this project comes from the
-Kaggle dataset "kalyan197/nifty50-stocks1999-2026-daily-ohlcv-and-fundamentals",
-released under CC0 (public domain) and sourced from Yahoo Finance. The MIT
-license above covers this repository's code and documentation, not the dataset.
