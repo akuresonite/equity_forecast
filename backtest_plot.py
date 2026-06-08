@@ -1,0 +1,162 @@
+"""
+Backtest overlay: same chart style as live_forecast.py, but on the most recent
+HELD-OUT 60-day window — so model forecasts can be compared against the realized
+actuals. Trains on everything before the window, forecasts it, overlays truth.
+
+Models (one representative per tier): RandomWalkWithDrift (t0) + AutoETS (t1, with
+80% band) on the price level, and LightGBM on returns integrated to a price path (t2).
+
+Writes:
+  assets/backtest/<TICKER>.png       per-stock actual-vs-forecast chart
+  assets/backtest_errors.csv          per-stock per-model MAPE over the window
+Usage:  ./run.sh backtest_plot.py
+"""
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+os.environ.setdefault('MPLBACKEND', 'Agg')
+
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import numpy as np
+import pandas as pd
+import polars as pl
+
+from statsforecast import StatsForecast
+from statsforecast.models import Naive, RandomWalkWithDrift, AutoETS
+from mlforecast import MLForecast
+from mlforecast.lag_transforms import RollingMean, RollingStd
+
+ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT))
+import data       # noqa: E402
+import splits     # noqa: E402
+
+H = splits.TEST_DAYS          # 60-day held-out window
+PREDICT_H = H + 15
+HIST_TAIL = 150
+LEVELS = [80]
+ASSETS = ROOT / 'assets' / 'backtest'
+LAGS = [1, 5, 10, 20, 60, 120, 252]
+ROLL = [5, 20, 60]
+STATIC = ['sector', 'listing_age_years']
+
+
+def _pd(df: pl.DataFrame) -> pd.DataFrame:
+    return df.to_pandas().assign(ds=lambda d: pd.to_datetime(d['ds']))
+
+
+def _expand_business_days(df_pd: pd.DataFrame) -> pd.DataFrame:
+    df_pd = df_pd.sort_values(['unique_id', 'ds']).reset_index(drop=True)
+    bounds = df_pd.groupby('unique_id')['ds'].agg(['min', 'max']).reset_index()
+    pieces = [pd.DataFrame({'unique_id': uid, 'ds': pd.bdate_range(mn, mx)})
+              for uid, mn, mx in bounds.itertuples(index=False) if len(pd.bdate_range(mn, mx))]
+    full = pd.concat(pieces, ignore_index=True)
+    out = full.merge(df_pd, on=['unique_id', 'ds'], how='left').sort_values(['unique_id', 'ds'])
+    out['y'] = out.groupby('unique_id')['y'].ffill()
+    return out.reset_index(drop=True)
+
+
+def mape(a, f):
+    a, f = np.asarray(a, float), np.asarray(f, float)
+    m = a != 0
+    return float(np.mean(np.abs((a[m] - f[m]) / a[m])) * 100) if m.any() else np.nan
+
+
+def main():
+    ASSETS.mkdir(parents=True, exist_ok=True)
+    panel = data.load_panel()
+    ids = splits._eligible_ids(panel)
+    close = splits._slice(panel, ids, 'close')           # unique_id, ds, y(=close)
+    ret = splits._slice(panel, ids, 'log_return')
+    days = close.select(pl.col('ds').unique().sort()).to_series().to_list()
+    test_start, test_end = days[-H], days[-1]
+    print(f'[backtest] held-out window: {test_start} … {test_end} ({H} trading days)', flush=True)
+
+    tr_close = close.filter(pl.col('ds') < test_start)
+    te_close = _pd(close.filter((pl.col('ds') >= test_start) & (pl.col('ds') <= test_end)))
+    tr_ret = ret.filter(pl.col('ds') < test_start)
+
+    static_df = data.load_static().to_pandas()
+    static_df['sector'] = static_df['sector'].fillna('unknown').astype(str)
+    static_df['listing_age_years'] = static_df['listing_age_years'].fillna(0.0).astype(float)
+    meta = static_df.set_index('unique_id').to_dict('index')
+
+    # tier0/tier1 level models with an 80% band from AutoETS
+    print('[backtest] fitting level models (Naive, RWD, AutoETS)…', flush=True)
+    sf = StatsForecast(models=[Naive(), RandomWalkWithDrift(), AutoETS(season_length=5)],
+                       freq='B', n_jobs=-1, fallback_model=Naive())
+    lvl = sf.forecast(df=_pd(tr_close)[['unique_id', 'ds', 'y']], h=PREDICT_H, level=LEVELS)
+    if 'unique_id' not in lvl.columns:
+        lvl = lvl.reset_index()
+
+    # tier2 returns model → integrate to price path off the last training close
+    print('[backtest] fitting LightGBM returns model…', flush=True)
+    last_close = _pd(tr_close).sort_values('ds').groupby('unique_id')['y'].last()
+    trp = _expand_business_days(_pd(tr_ret)).merge(static_df[['unique_id'] + STATIC],
+                                                   on='unique_id', how='left').dropna(subset=['y'])
+    trp['sector'] = trp['sector'].astype('category')
+    import lightgbm as lgb
+    mlf = MLForecast(
+        models={'lgb': lgb.LGBMRegressor(n_estimators=1500, learning_rate=0.05, max_depth=8,
+                num_leaves=63, min_data_in_leaf=200, feature_fraction=0.9, bagging_fraction=0.9,
+                bagging_freq=5, objective='regression', verbosity=-1, n_jobs=-1, random_state=42)},
+        freq='B', lags=LAGS,
+        lag_transforms={1: [RollingMean(w) for w in ROLL] + [RollingStd(w) for w in ROLL]},
+        num_threads=4)
+    mlf.fit(trp, static_features=STATIC, keep_last_n=max(LAGS) + 60)
+    rp = mlf.predict(h=PREDICT_H).sort_values(['unique_id', 'ds'])
+    rp['cum'] = rp.groupby('unique_id')['lgb'].cumsum()
+    rp = rp.merge(last_close.rename('lc'), left_on='unique_id', right_index=True, how='left')
+    rp['lgb_price'] = rp['lc'] * np.exp(rp['cum'])
+
+    rows = []
+    hist_all = _pd(tr_close)
+    print('[backtest] rendering charts…', flush=True)
+    for uid in sorted(te_close['unique_id'].unique()):
+        act = te_close[te_close['unique_id'] == uid].sort_values('ds')
+        g = lvl[lvl['unique_id'] == uid].merge(act[['ds']], on='ds', how='inner').sort_values('ds')
+        r = rp[rp['unique_id'] == uid].merge(act[['ds']], on='ds', how='inner').sort_values('ds')
+        if act.empty or g.empty:
+            continue
+        e = {'unique_id': uid,
+             'RWD': mape(act['y'], g['RWD']),
+             'AutoETS': mape(act['y'], g['AutoETS']),
+             'lgb': mape(act['y'].values[:len(r)], r['lgb_price']) if not r.empty else np.nan}
+        rows.append(e)
+
+        hist = hist_all[hist_all['unique_id'] == uid].sort_values('ds').tail(HIST_TAIL)
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.plot(hist['ds'], hist['y'], color='#888', lw=1.0, label='history (train)')
+        ax.plot(act['ds'], act['y'], color='#000', lw=2.0, marker='.', ms=3, label='ACTUAL (held-out)')
+        ax.plot(g['ds'], g['RWD'], color='#1f77b4', lw=1.5, ls='--',
+                label=f"RandomWalkWithDrift ({e['RWD']:.1f}% MAPE)")
+        ax.plot(g['ds'], g['AutoETS'], color='#d62728', lw=1.5,
+                label=f"AutoETS ({e['AutoETS']:.1f}%)")
+        if 'AutoETS-lo-80' in g.columns:
+            ax.fill_between(g['ds'], g['AutoETS-lo-80'], g['AutoETS-hi-80'],
+                            color='#d62728', alpha=0.12, label='AutoETS 80%')
+        if not r.empty:
+            ax.plot(r['ds'], r['lgb_price'], color='#2ca02c', lw=1.5,
+                    label=f"LightGBM returns→price ({e['lgb']:.1f}%)")
+        ax.axvline(act['ds'].iloc[0], color='k', lw=0.8, ls=':', alpha=0.6)
+        m = meta.get(uid, {})
+        ax.set_title(f"{uid} · {m.get('company_name','')} · {m.get('sector','')}  — "
+                     f"backtest on held-out {H}d", fontsize=10)
+        ax.set_ylabel('price (INR, adj)'); ax.legend(fontsize=8, loc='best')
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+        fig.autofmt_xdate(); fig.tight_layout()
+        fig.savefig(ASSETS / f'{uid.replace("/", "_")}.png', dpi=120); plt.close(fig)
+
+    err = pd.DataFrame(rows)
+    err.to_csv(ASSETS.parent / 'backtest_errors.csv', index=False)
+    print(f'[backtest] wrote {len(rows)} charts → {ASSETS}')
+    print('[backtest] mean MAPE over the held-out window (lower = closer to actual):')
+    print(err[['RWD', 'AutoETS', 'lgb']].mean().round(2).to_string())
+
+
+if __name__ == '__main__':
+    main()

@@ -451,7 +451,22 @@ and the **short lags** dominate; `sector` contributes little. The model is essen
 learning a recency-weighted average return — i.e. it rediscovers the drift baseline rather
 than finding exploitable structure, which is exactly why it does not beat that baseline.*
 
-### 7.5 Live forward forecast
+### 7.5 Backtest overlay — forecasts vs. realized actuals
+
+The MASE tables say *how wrong* each model is; this makes it visible. We train on everything
+up to the last 60 trading days, forecast that window, and overlay the **realized** prices
+(which the leaderboard only summarises numerically).
+
+![Backtest overlay](assets/backtest/RELIANCE.NS.png)
+
+*Figure 6. RELIANCE, held-out 60 days (train ends at the dotted line; black = actual). The flat
+RandomWalkWithDrift and AutoETS forecasts (≈4% MAPE) track the realized sideways-then-down path
+closely and the actual stays inside AutoETS's 80% band, while the LightGBM returns→price path
+drifts upward and misses (≈7%). Mean MAPE across all 49 stocks over this window: RWD 4.45%,
+AutoETS 4.59%, LightGBM 6.07% — the same ordering as the MASE leaderboard, now visible. (Full
+set in `assets/backtest/`.)*
+
+### 7.6 Live forward forecast
 
 After backtesting, models are refit on all history and projected ~60 business days forward:
 RWD + AutoETS (with 80/95% prediction intervals) on price, and LightGBM on returns integrated
@@ -459,7 +474,7 @@ to a price path. One chart per stock (49 total) ships in `assets/forecasts/`.
 
 ![RELIANCE forecast](assets/forecasts/RELIANCE.NS.png)
 
-*Figure 6. RELIANCE: history flows into a near-flat RWD/AutoETS continuation with a widening
+*Figure 7. RELIANCE: history flows into a near-flat RWD/AutoETS continuation with a widening
 AutoETS interval cone (uncertainty $\propto \sqrt{h}$ for a random walk), and a mildly upward
 LightGBM path. The forecasts being nearly flat is **not a bug** — it is the correct behaviour
 when the best estimate of tomorrow is today plus a tiny drift.*
